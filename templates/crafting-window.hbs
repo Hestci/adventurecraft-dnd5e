@@ -1,0 +1,666 @@
+<div class="ac-crafting-window">
+  <nav class="tabs" data-group="primary">
+    {{#if canCombineItems}}
+    <a class="item" data-tab="combine" data-group="primary">
+      <i class="fas fa-object-group"></i> {{localize "ADVENTURECRAFT.Tab.CombineItems"}}
+    </a>
+    {{/if}}
+    {{#if canCreateRecipe}}
+    <a class="item" data-tab="recipe" data-group="primary">
+      <i class="fas fa-scroll"></i> {{localize "ADVENTURECRAFT.Tab.CreateRecipe"}}
+    </a>
+    {{/if}}
+  </nav>
+
+  <section class="content">
+    {{#unless canCombineItems}}
+    {{#unless canCreateRecipe}}
+    <div class="ac-wip-notice">
+      <i class="fas fa-user-lock"></i>
+      <p>{{localize "ADVENTURECRAFT.Message.NoCraftingPermissions"}}</p>
+    </div>
+    {{/unless}}
+    {{/unless}}
+
+    {{!-- ==================== TAB: COMBINE ITEMS ==================== --}}
+    {{#if canCombineItems}}
+    <div class="tab" data-tab="combine" data-group="primary">
+
+      <div class="ac-section">
+        <h3>{{localize "ADVENTURECRAFT.Label.DropItems"}}</h3>
+        <div class="ac-drop-zone" data-drop-target="combine">
+          {{#if combineItems.length}}
+            <ul class="ac-item-list">
+              {{#each combineItems}}
+                <li class="ac-item-entry" data-index="{{@index}}">
+                  <img src="{{this.img}}" alt="{{this.name}}" width="28" height="28"/>
+                  <span class="ac-item-name">{{this.name}}</span>
+                  <span class="ac-item-type">[{{this.type}}]</span>
+                  <a class="ac-remove-item" data-index="{{@index}}" data-tab="combine" title="{{localize "ADVENTURECRAFT.Button.Remove"}}">
+                    <i class="fas fa-times"></i>
+                  </a>
+                </li>
+              {{/each}}
+            </ul>
+          {{else}}
+            <p class="ac-drop-hint"><i class="fas fa-arrow-down"></i> {{localize "ADVENTURECRAFT.Hint.DragItemsHere"}}</p>
+          {{/if}}
+        </div>
+      </div>
+
+      {{#if combineItems.length}}
+
+        <div class="ac-section">
+          <h3>{{localize "ADVENTURECRAFT.Label.ChooseImage"}}</h3>
+          <div class="ac-image-selector">
+            {{#each combineItems}}
+              <label class="ac-image-option">
+                <input type="radio" name="combineImg" value="{{this.img}}" {{#if @first}}checked{{/if}} />
+                <img src="{{this.img}}" alt="{{this.name}}" title="{{this.name}}" width="40" height="40"/>
+              </label>
+            {{/each}}
+            <label class="ac-image-option ac-browse-option">
+              <input type="radio" name="combineImg" value="__browse__" />
+              <span class="ac-browse-label"><i class="fas fa-folder-open"></i> {{localize "ADVENTURECRAFT.Button.Browse"}}</span>
+            </label>
+            {{#if customCombineImg}}
+              <div class="ac-custom-img-preview">
+                <img src="{{customCombineImg}}" alt="Custom" width="40" height="40"/>
+              </div>
+            {{/if}}
+          </div>
+        </div>
+
+        {{#if combineActivities.length}}
+        <div class="ac-section">
+          <h3><i class="fas fa-bolt"></i> {{localize "ADVENTURECRAFT.Label.Activities"}}</h3>
+          <p class="ac-hint">{{localize "ADVENTURECRAFT.Hint.SelectActivities"}}</p>
+          <div class="ac-activity-list">
+            {{#each combineActivities}}
+            <label class="ac-activity-card {{#if this.included}}is-included{{/if}}">
+              <input type="checkbox" class="ac-activity-check" data-key="{{this.key}}" {{#if this.included}}checked{{/if}}/>
+              <span class="ac-activity-type-badge ac-act-{{this.type}}">{{this.typeLabel}}</span>
+              <div class="ac-activity-body">
+                <span class="ac-activity-name">{{this.name}}</span>
+                <span class="ac-activity-summary">{{this.summary}}</span>
+              </div>
+              <div class="ac-activity-source">
+                <img src="{{this.sourceImg}}" width="16" height="16"/>
+                <span>{{this.sourceName}}</span>
+              </div>
+            </label>
+            {{/each}}
+          </div>
+        </div>
+        {{/if}}
+
+        <details class="ac-props-details">
+          <summary class="ac-props-summary">
+            <i class="fas fa-sliders-h"></i> {{localize "ADVENTURECRAFT.Label.AdditionalProps"}}
+          </summary>
+          <div class="ac-props-body">
+            <p class="ac-hint">{{localize "ADVENTURECRAFT.Hint.SelectProps"}}</p>
+            <div class="ac-properties-container">
+              {{#each combineItemGroups}}
+                <div class="ac-prop-group">
+                  <div class="ac-prop-group-header">
+                    <img src="{{this.img}}" width="18" height="18"/>
+                    <strong>{{this.name}}</strong>
+                  </div>
+                  {{#if this.properties.length}}
+                    {{#each this.properties}}
+                      <div class="ac-prop-row">
+                        <input type="checkbox" class="ac-prop-check" value="{{this.uniqueKey}}" data-group="combine" checked />
+                        <span class="ac-prop-path" title="{{this.path}}">{{this.path}}</span>
+                        {{#if this.isBoolean}}
+                          <input type="checkbox" class="ac-prop-val" data-prop-key="{{this.uniqueKey}}" data-group="combine" {{#if this.boolChecked}}checked{{/if}} />
+                        {{/if}}
+                        {{#if this.isNumber}}
+                          <input type="number" class="ac-prop-val" data-prop-key="{{this.uniqueKey}}" data-group="combine" value="{{this.value}}" step="any" />
+                        {{/if}}
+                        {{#if this.isText}}
+                          <input type="text" class="ac-prop-val" data-prop-key="{{this.uniqueKey}}" data-group="combine" value="{{this.value}}" />
+                        {{/if}}
+                      </div>
+                    {{/each}}
+                  {{else}}
+                    <p class="ac-hint ac-prop-empty">{{localize "ADVENTURECRAFT.Hint.NoEditableProps"}}</p>
+                  {{/if}}
+                </div>
+              {{/each}}
+            </div>
+          </div>
+        </details>
+
+        <div class="ac-section ac-create-section">
+          <div class="ac-row">
+            <label>{{localize "ADVENTURECRAFT.Label.ItemName"}}</label>
+            <input type="text" id="ac-combine-name" placeholder="{{localize "ADVENTURECRAFT.Hint.EnterItemName"}}" value="{{combineName}}" />
+          </div>
+          <div class="ac-row">
+            <label>{{localize "ADVENTURECRAFT.Label.ItemType"}}</label>
+            <select id="ac-combine-type">
+              {{#each itemTypes}}
+                <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+              {{/each}}
+            </select>
+          </div>
+          <button type="button" class="ac-btn-primary ac-create-item" data-action="createItem">
+            <i class="fas fa-plus-circle"></i> {{localize "ADVENTURECRAFT.Button.CreateItem"}}
+          </button>
+        </div>
+
+      {{/if}}
+    </div>
+    {{/if}}
+
+    {{!-- ==================== TAB: CREATE RECIPE ==================== --}}
+    {{#if canCreateRecipe}}
+    <div class="tab" data-tab="recipe" data-group="primary">
+
+      <div class="ac-columns">
+
+        <div class="ac-column">
+          <div class="ac-section">
+            <h3>{{localize "ADVENTURECRAFT.Label.Ingredients"}}</h3>
+            <p class="ac-hint">{{localize "ADVENTURECRAFT.Hint.DropIngredientsForRecipe"}}</p>
+            <div class="ac-drop-zone" data-drop-target="recipe-ingredients">
+              {{#if recipeIngredients.length}}
+                <ul class="ac-item-list">
+                  {{#each recipeIngredients}}
+                    <li class="ac-item-entry ac-item-entry--recipe" data-index="{{@index}}">
+                      <img src="{{this.img}}" alt="{{this.name}}" width="24" height="24"/>
+                      <div class="ac-item-info">
+                        <span class="ac-item-name">{{this.name}}</span>
+                        <input type="text" class="ac-tags-input" data-index="{{@index}}"
+                          placeholder="{{localize "ADVENTURECRAFT.Hint.TagsPlaceholder"}}" value="{{this.tagsStr}}" title="{{localize "ADVENTURECRAFT.Hint.TagsTooltip"}}"/>
+                      </div>
+                      <input type="number" class="ac-qty-input" data-index="{{@index}}"
+                        value="{{this.quantity}}" min="1" max="99" />
+                      <a class="ac-remove-item" data-index="{{@index}}" data-tab="recipe-ingredients" title="{{localize "ADVENTURECRAFT.Button.Remove"}}">
+                        <i class="fas fa-times"></i>
+                      </a>
+                    </li>
+                  {{/each}}
+                </ul>
+              {{else}}
+                <p class="ac-drop-hint"><i class="fas fa-arrow-down"></i> {{localize "ADVENTURECRAFT.Hint.DropIngredientsHere"}}</p>
+              {{/if}}
+            </div>
+          </div>
+        </div>
+
+        <div class="ac-column">
+          <div class="ac-section">
+            <h3>{{localize "ADVENTURECRAFT.Label.ResultItem"}}</h3>
+            <p class="ac-hint">{{localize "ADVENTURECRAFT.Hint.DropResultTemplate"}}</p>
+            <div class="ac-drop-zone ac-drop-zone--single" data-drop-target="recipe-result">
+              {{#if recipeResult}}
+                <div class="ac-result-preview">
+                  <img src="{{recipeResult.img}}" alt="{{recipeResult.name}}" width="36" height="36"/>
+                  <span>{{recipeResult.name}}</span>
+                  <a class="ac-remove-result" title="{{localize "ADVENTURECRAFT.Button.Remove"}}"><i class="fas fa-times"></i></a>
+                </div>
+              {{else}}
+                <p class="ac-drop-hint"><i class="fas fa-arrow-down"></i> {{localize "ADVENTURECRAFT.Hint.DropResultHere"}}</p>
+              {{/if}}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {{#if recipeResult}}
+
+        <div class="ac-section">
+          <h3>{{localize "ADVENTURECRAFT.Label.ChooseImageResult"}}</h3>
+          <div class="ac-image-selector">
+            <label class="ac-image-option">
+              <input type="radio" name="recipeImg" value="{{recipeResult.img}}" checked />
+              <img src="{{recipeResult.img}}" width="36" height="36" title="{{localize "ADVENTURECRAFT.Label.FromResult"}}"/>
+            </label>
+            {{#each recipeIngredients}}
+              <label class="ac-image-option">
+                <input type="radio" name="recipeImg" value="{{this.img}}" />
+                <img src="{{this.img}}" title="{{localize "ADVENTURECRAFT.Label.FromItem" name=this.name}}" width="36" height="36"/>
+              </label>
+            {{/each}}
+            <label class="ac-image-option ac-browse-option">
+              <input type="radio" name="recipeImg" value="__browse__" />
+              <span class="ac-browse-label"><i class="fas fa-folder-open"></i> {{localize "ADVENTURECRAFT.Button.Browse"}}</span>
+            </label>
+            {{#if customRecipeImg}}
+              <div class="ac-custom-img-preview">
+                <img src="{{customRecipeImg}}" width="36" height="36"/>
+              </div>
+            {{/if}}
+          </div>
+        </div>
+
+        {{#if showRecipeResultProps}}
+        <details class="ac-props-details">
+          <summary class="ac-props-summary">
+            <i class="fas fa-sliders-h"></i> {{localize "ADVENTURECRAFT.Label.ResultProps"}}
+          </summary>
+          <div class="ac-props-body">
+            <p class="ac-hint">{{localize "ADVENTURECRAFT.Hint.CheckResultProps"}}</p>
+            <div class="ac-properties-container">
+              {{#each recipeItemGroups}}
+                <div class="ac-prop-group">
+                  <div class="ac-prop-group-header">
+                    <img src="{{this.img}}" width="18" height="18"/>
+                    <strong>{{this.name}}</strong>
+                  </div>
+                  {{#if this.properties.length}}
+                    {{#each this.properties}}
+                      <div class="ac-prop-row">
+                        <input type="checkbox" class="ac-prop-check" value="{{this.uniqueKey}}" data-group="recipe" checked />
+                        <span class="ac-prop-path" title="{{this.path}}">{{this.path}}</span>
+                        {{#if this.isBoolean}}
+                          <input type="checkbox" class="ac-prop-val" data-prop-key="{{this.uniqueKey}}" data-group="recipe" {{#if this.boolChecked}}checked{{/if}} />
+                        {{/if}}
+                        {{#if this.isNumber}}
+                          <input type="number" class="ac-prop-val" data-prop-key="{{this.uniqueKey}}" data-group="recipe" value="{{this.value}}" step="any" />
+                        {{/if}}
+                        {{#if this.isText}}
+                          <input type="text" class="ac-prop-val" data-prop-key="{{this.uniqueKey}}" data-group="recipe" value="{{this.value}}" />
+                        {{/if}}
+                      </div>
+                    {{/each}}
+                  {{else}}
+                    <p class="ac-hint ac-prop-empty">{{localize "ADVENTURECRAFT.Hint.NoEditableProps"}}</p>
+                  {{/if}}
+                </div>
+              {{/each}}
+            </div>
+          </div>
+        </details>
+        {{/if}}
+
+      {{/if}}
+
+      <div class="ac-section">
+        <h3><i class="fas fa-dice-d20"></i> {{localize "ADVENTURECRAFT.Label.CraftCheck"}} <span class="ac-hint-inline">{{localize "ADVENTURECRAFT.Hint.Optional"}}</span></h3>
+        <div class="ac-row">
+          <label>{{localize "ADVENTURECRAFT.Label.CheckType"}}</label>
+          <select id="ac-check-type">
+            <option value="" {{#unless recipeCheck.type}}selected{{/unless}}>{{localize "ADVENTURECRAFT.Check.TypeNone"}}</option>
+            <option value="ability" {{#if recipeCheck.isAbility}}selected{{/if}}>{{localize "ADVENTURECRAFT.Check.TypeAbility"}}</option>
+            <option value="skill"   {{#if recipeCheck.isSkill}}selected{{/if}}>{{localize "ADVENTURECRAFT.Check.TypeSkill"}}</option>
+            <option value="tool"    {{#if recipeCheck.isTool}}selected{{/if}}>{{localize "ADVENTURECRAFT.Check.TypeTool"}}</option>
+          </select>
+        </div>
+        <div class="ac-check-detail" id="ac-check-ability-row" {{#unless recipeCheck.isAbility}}style="display:none"{{/unless}}>
+          <div class="ac-row">
+            <label>{{localize "ADVENTURECRAFT.Label.Ability"}}</label>
+            <select id="ac-check-ability-key">
+              {{#each abilityOptions}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>{{/each}}
+            </select>
+          </div>
+        </div>
+        <div class="ac-check-detail" id="ac-check-skill-row" {{#unless recipeCheck.isSkill}}style="display:none"{{/unless}}>
+          <div class="ac-row">
+            <label>{{localize "ADVENTURECRAFT.Label.Skill"}}</label>
+            <select id="ac-check-skill-key">
+              {{#each skillOptions}}<option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>{{/each}}
+            </select>
+          </div>
+        </div>
+        <div class="ac-check-detail" id="ac-check-tool-row" {{#unless recipeCheck.isTool}}style="display:none"{{/unless}}>
+          <div class="ac-row">
+            <label>{{localize "ADVENTURECRAFT.Label.Tool"}}</label>
+            <div class="ac-drop-zone ac-drop-zone--single" data-drop-target="recipe-tool">
+              {{#if recipeCheck.toolName}}
+                <div class="ac-result-preview">
+                  <img src="{{recipeCheck.toolImg}}" alt="{{recipeCheck.toolName}}" width="28" height="28"/>
+                  <span>{{recipeCheck.toolName}}</span>
+                  <a class="ac-remove-tool" title="{{localize "ADVENTURECRAFT.Button.Remove"}}"><i class="fas fa-times"></i></a>
+                </div>
+              {{else}}
+                <p class="ac-drop-hint"><i class="fas fa-arrow-down"></i> {{localize "ADVENTURECRAFT.Hint.DropToolHere"}}</p>
+              {{/if}}
+            </div>
+          </div>
+          <div class="ac-row">
+            <label class="ac-label-flex">
+              <input type="checkbox" id="ac-tool-allow-without" {{#if recipeCheck.allowWithoutTool}}checked{{/if}}/>
+              <span>{{localize "ADVENTURECRAFT.Hint.CanCraftWithout"}}</span>
+            </label>
+          </div>
+          <div id="ac-tool-fallback-row" {{#unless recipeCheck.allowWithoutTool}}style="display:none"{{/unless}}>
+            <div class="ac-row">
+              <label>{{localize "ADVENTURECRAFT.Hint.Fallback"}}</label>
+              <select id="ac-tool-fallback-type">
+                <option value="skill"   {{#if recipeCheck.isFallbackSkill}}selected{{/if}}>{{localize "ADVENTURECRAFT.Label.Skill"}}</option>
+                <option value="ability" {{#if recipeCheck.isFallbackAbility}}selected{{/if}}>{{localize "ADVENTURECRAFT.Label.Ability"}}</option>
+              </select>
+            </div>
+            <div class="ac-row" id="ac-tool-fallback-skill-row" {{#unless recipeCheck.isFallbackSkill}}style="display:none"{{/unless}}>
+              <label>{{localize "ADVENTURECRAFT.Label.Skill"}}</label>
+              <select id="ac-tool-fallback-skill-key">
+                {{#each fallbackSkillOptions}}
+                  <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                {{/each}}
+              </select>
+            </div>
+            <div class="ac-row" id="ac-tool-fallback-ability-row" {{#unless recipeCheck.isFallbackAbility}}style="display:none"{{/unless}}>
+              <label>{{localize "ADVENTURECRAFT.Label.Ability"}}</label>
+              <select id="ac-tool-fallback-ability-key">
+                {{#each fallbackAbilityOptions}}
+                  <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                {{/each}}
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="ac-check-detail" id="ac-check-dc-row" {{#unless recipeCheck.type}}style="display:none"{{/unless}}>
+          <div class="ac-row">
+            <label>{{localize "ADVENTURECRAFT.Label.DC"}}</label>
+            <input type="number" id="ac-check-dc" value="{{recipeCheck.dc}}" min="1" max="30" style="max-width:70px" />
+          </div>
+          <div class="ac-row">
+            <label>{{localize "ADVENTURECRAFT.Label.OnFailure"}}</label>
+            <select id="ac-check-fail">
+              <option value="consume" {{#if recipeCheck.consumeOnFail}}selected{{/if}}>{{localize "ADVENTURECRAFT.OnFailure.Consume"}}</option>
+              <option value="keep"    {{#unless recipeCheck.consumeOnFail}}selected{{/unless}}>{{localize "ADVENTURECRAFT.OnFailure.Keep"}}</option>
+            </select>
+          </div>
+          <div class="ac-row">
+            <label title="{{localize "ADVENTURECRAFT.Hint.CritThresholdTitle"}}">{{localize "ADVENTURECRAFT.Label.CritThreshold"}} <span class="ac-hint-inline">{{localize "ADVENTURECRAFT.Hint.CritThresholdHint"}}</span></label>
+            <input type="number" id="ac-check-crit-threshold" value="{{recipeCheck.critThreshold}}"
+                   min="1" max="30" style="max-width:60px"/>
+          </div>
+          <div class="ac-row">
+            <label>{{localize "ADVENTURECRAFT.Label.CritSuccess"}}</label>
+            <select id="ac-crit-success-type">
+              <option value="qty"      {{#if recipeCheck.critSuccess.isQty}}selected{{/if}}>{{localize "ADVENTURECRAFT.CritSuccess.TypeBonus"}}</option>
+              <option value="property" {{#if recipeCheck.critSuccess.isProperty}}selected{{/if}}>{{localize "ADVENTURECRAFT.CritSuccess.TypeProperty"}}</option>
+              <option value="damage"   {{#if recipeCheck.critSuccess.isDamage}}selected{{/if}}>{{localize "ADVENTURECRAFT.CritSuccess.TypeDamage"}}</option>
+              <option value="auto"     {{#if recipeCheck.critSuccess.isAuto}}selected{{/if}}>{{localize "ADVENTURECRAFT.CritSuccess.TypeAuto"}}</option>
+              <option value="pool"     {{#if recipeCheck.critSuccess.isPool}}selected{{/if}}>{{localize "ADVENTURECRAFT.CritSuccess.TypePool"}}</option>
+            </select>
+          </div>
+          {{#if recipeCheck.critSuccess.isAuto}}
+          <p class="notes" style="margin:0.25rem 0 0.35rem">{{localize "ADVENTURECRAFT.Hint.CritAuto"}}</p>
+          <p id="ac-crit-auto-preview-row" class="notes" style="margin:0 0 0.5rem">
+            <span id="ac-crit-auto-preview-text">{{recipeCheck.critSuccess.critAutoPreview}}</span>
+          </p>
+          {{/if}}
+          <div id="ac-crit-qty-row" {{#unless recipeCheck.critSuccess.isQty}}style="display:none"{{/unless}}>
+            <div class="ac-row">
+              <label>{{localize "ADVENTURECRAFT.Label.BonusQuantity"}}</label>
+              <input type="number" id="ac-crit-qty" value="{{recipeCheck.critSuccess.qty}}"
+                     min="1" max="99" style="max-width:60px"/>
+            </div>
+          </div>
+          <div id="ac-crit-property-row" {{#unless recipeCheck.critSuccess.isProperty}}style="display:none"{{/unless}}>
+            <div class="ac-row">
+              <label>{{localize "ADVENTURECRAFT.Label.Property"}} <span class="ac-hint-inline">{{localize "ADVENTURECRAFT.Hint.PropertyHint"}}</span></label>
+              <select id="ac-crit-property-preset">
+                {{#each recipeCheck.critSuccess.critPropertyPresetSelect}}
+                <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                {{/each}}
+              </select>
+            </div>
+            <div class="ac-row" id="ac-crit-property-custom-row" {{#unless recipeCheck.critSuccess.propertyCustomVisible}}style="display:none"{{/unless}}>
+              <label>{{localize "ADVENTURECRAFT.Label.PropertyCustomPath"}}</label>
+              <input type="text" id="ac-crit-property-custom" value="{{recipeCheck.critSuccess.propertyCustomValue}}"
+                     placeholder="armor.value"/>
+            </div>
+            <div class="ac-row">
+              <label>{{localize "ADVENTURECRAFT.Label.PropertyValue"}}</label>
+              <input type="number" id="ac-crit-property-value" value="{{recipeCheck.critSuccess.value}}"
+                     style="max-width:60px"/>
+              <select id="ac-crit-property-mode">
+                <option value="add" {{#if recipeCheck.critSuccess.isAdd}}selected{{/if}}>{{localize "ADVENTURECRAFT.PropertyMode.Add"}}</option>
+                <option value="set" {{#if recipeCheck.critSuccess.isSet}}selected{{/if}}>{{localize "ADVENTURECRAFT.PropertyMode.Set"}}</option>
+              </select>
+            </div>
+          </div>
+          <fieldset id="ac-crit-damage-row" class="ac-crit-damage-fieldset" {{#unless recipeCheck.critSuccess.isDamage}}style="display:none"{{/unless}}>
+            <legend>{{localize "ADVENTURECRAFT.Label.CritDamageFieldset"}}</legend>
+            <div class="form-group">
+              <label for="ac-crit-damage-formula">{{localize "ADVENTURECRAFT.Label.DamageFormula"}}</label>
+              <div class="form-fields">
+                <input type="text" id="ac-crit-damage-formula" name="ac-crit-damage-formula" value="{{recipeCheck.critSuccess.damageFormula}}"
+                       placeholder="@prof"/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label title="{{localize "ADVENTURECRAFT.Hint.DamageTypeMultiTitle"}}">{{localize "ADVENTURECRAFT.Label.DamageTypes"}}</label>
+              <p class="notes ac-damage-types-hint">{{localize "ADVENTURECRAFT.Hint.DamageTypeMulti"}}</p>
+              <div id="ac-crit-damage-type-chips" class="ac-damage-type-chips" role="list">
+                {{#each recipeCheck.critSuccess.damageTypesSelected}}
+                <span class="ac-damage-type-chip" role="listitem" data-value="{{this.value}}">
+                  <span class="ac-damage-type-chip-label">{{this.label}}</span>
+                  <button type="button" class="ac-damage-type-chip-remove" data-value="{{this.value}}" title="{{localize "ADVENTURECRAFT.Button.Remove"}}" aria-label="{{localize "ADVENTURECRAFT.Aria.RemoveDamageType"}}">×</button>
+                </span>
+                {{/each}}
+              </div>
+              <div class="form-fields">
+                <select id="ac-crit-damage-type-pick" class="ac-damage-type-pick" aria-label="{{localize "ADVENTURECRAFT.Label.DamageTypePickPlaceholder"}}">
+                  <option value="">{{localize "ADVENTURECRAFT.Label.DamageTypePickPlaceholder"}}</option>
+                  {{#each damageTypePickOptions}}
+                  <option value="{{this.value}}">{{this.label}}</option>
+                  {{/each}}
+                </select>
+              </div>
+            </div>
+          </fieldset>
+          <div id="ac-crit-pool-panel" {{#unless recipeCheck.critSuccess.isPool}}style="display:none"{{/unless}} class="ac-crit-pool-panel">
+            <p class="notes" style="margin:0.35rem 0">{{localize "ADVENTURECRAFT.Hint.CritPool"}}</p>
+            <div class="ac-row">
+              <button type="button" class="ac-btn-secondary ac-suggest-crit-pool">
+                <i class="fas fa-magic"></i> {{localize "ADVENTURECRAFT.Button.SuggestCritPool"}}
+              </button>
+            </div>
+            <div class="ac-row">
+              <label>{{localize "ADVENTURECRAFT.Label.CritPoolPresentMode"}}</label>
+              <select id="ac-crit-pool-present-mode">
+                <option value="randomSubset" {{#unless recipeCheck.critSuccess.poolPresentIsFullPool}}selected{{/unless}}>{{localize "ADVENTURECRAFT.CritPool.PresentRandom"}}</option>
+                <option value="fullPool" {{#if recipeCheck.critSuccess.poolPresentIsFullPool}}selected{{/if}}>{{localize "ADVENTURECRAFT.CritPool.PresentFull"}}</option>
+              </select>
+            </div>
+            <div class="ac-row">
+              <label>{{localize "ADVENTURECRAFT.Label.CritPoolPresentCount"}}</label>
+              <input type="number" id="ac-crit-pool-present-count" value="{{recipeCheck.critSuccess.poolPresentCount}}" min="1" max="20" style="max-width:60px"/>
+            </div>
+            <div class="ac-row">
+              <label>{{localize "ADVENTURECRAFT.Label.CritPoolSizeFormula"}}</label>
+              <input type="text" id="ac-crit-pool-size-formula" value="{{recipeCheck.critSuccess.poolSizeFormula}}" placeholder="1d6" style="max-width:100px"/>
+            </div>
+            <div class="ac-row">
+              <label>{{localize "ADVENTURECRAFT.Label.CritPoolSizeTable"}}</label>
+              <textarea id="ac-crit-pool-size-table" rows="3" style="width:100%;font-family:monospace;font-size:0.85rem">{{recipeCheck.critSuccess.poolSizeTableJson}}</textarea>
+            </div>
+            {{#each recipeCheck.critSuccess.poolOptions}}
+            <div class="ac-pool-opt ac-section" style="margin-top:0.5rem;padding:0.35rem;border:1px solid rgba(255,255,255,0.12);border-radius:4px" data-index="{{this.index}}">
+              <div class="ac-row">
+                <label>{{localize "ADVENTURECRAFT.Label.CritPoolOptionType"}}</label>
+                <select class="ac-pool-opt-type">
+                  <option value="qty" {{#if this.isQty}}selected{{/if}}>{{localize "ADVENTURECRAFT.CritSuccess.TypeBonus"}}</option>
+                  <option value="property" {{#if this.isProperty}}selected{{/if}}>{{localize "ADVENTURECRAFT.CritSuccess.TypeProperty"}}</option>
+                  <option value="damage" {{#if this.isDamage}}selected{{/if}}>{{localize "ADVENTURECRAFT.CritSuccess.TypeDamage"}}</option>
+                  <option value="itemProperty" {{#if this.isItemProperty}}selected{{/if}}>{{localize "ADVENTURECRAFT.CritSuccess.TypeItemProperty"}}</option>
+                </select>
+                <button type="button" class="ac-crit-pool-remove" data-index="{{this.index}}" title="{{localize "ADVENTURECRAFT.Button.Remove"}}">×</button>
+              </div>
+              <div class="ac-row">
+                <label>{{localize "ADVENTURECRAFT.Label.CritPoolOptionLabel"}}</label>
+                <input type="text" class="ac-pool-opt-label" value="{{this.label}}" placeholder="{{localize "ADVENTURECRAFT.Hint.CritPoolLabelOptional"}}"/>
+              </div>
+              <div class="ac-pool-opt-qty-row" {{#unless this.isQty}}style="display:none"{{/unless}}>
+                <div class="ac-row">
+                  <label>{{localize "ADVENTURECRAFT.Label.BonusQuantity"}}</label>
+                  <input type="number" class="ac-pool-opt-qty" value="{{this.qty}}" min="1" max="99" style="max-width:60px"/>
+                </div>
+              </div>
+              <div class="ac-pool-opt-property-block" {{#unless this.isProperty}}style="display:none"{{/unless}}>
+                <div class="ac-row">
+                  <label>{{localize "ADVENTURECRAFT.Label.Property"}}</label>
+                  <select class="ac-pool-opt-property-preset">
+                    {{#each this.propertyPresetSelect}}
+                    <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                    {{/each}}
+                  </select>
+                </div>
+                <div class="ac-row ac-pool-opt-property-custom-row" {{#unless this.propertyCustomVisible}}style="display:none"{{/unless}}>
+                  <label>{{localize "ADVENTURECRAFT.Label.PropertyCustomPath"}}</label>
+                  <input type="text" class="ac-pool-opt-property-custom" value="{{this.propertyCustomValue}}" placeholder="armor.value"/>
+                </div>
+                <div class="ac-row">
+                  <label>{{localize "ADVENTURECRAFT.Label.PropertyValue"}}</label>
+                  <input type="number" class="ac-pool-opt-value" value="{{this.value}}" style="max-width:60px"/>
+                  <select class="ac-pool-opt-mode">
+                    <option value="add" {{#if this.isAdd}}selected{{/if}}>{{localize "ADVENTURECRAFT.PropertyMode.Add"}}</option>
+                    <option value="set" {{#if this.isSet}}selected{{/if}}>{{localize "ADVENTURECRAFT.PropertyMode.Set"}}</option>
+                  </select>
+                </div>
+              </div>
+              <div class="ac-pool-opt-item-property-block" {{#unless this.isItemProperty}}style="display:none"{{/unless}}>
+                <div class="ac-row">
+                  <label>{{localize "ADVENTURECRAFT.Label.ItemProperty"}}</label>
+                  <select class="ac-pool-opt-item-property">
+                    {{#each this.itemPropertySelect}}
+                    <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                    {{/each}}
+                  </select>
+                </div>
+              </div>
+              <div class="ac-pool-opt-damage-block" {{#unless this.isDamage}}style="display:none"{{/unless}}>
+                <fieldset class="ac-crit-damage-fieldset ac-pool-damage-fieldset">
+                  <legend>{{localize "ADVENTURECRAFT.Label.CritDamageFieldset"}}</legend>
+                  <div class="form-group">
+                    <label>{{localize "ADVENTURECRAFT.Label.DamageFormula"}}</label>
+                    <div class="form-fields">
+                      <input type="text" class="ac-pool-opt-dmg-formula" value="{{this.damageFormula}}" placeholder="@prof"/>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label title="{{localize "ADVENTURECRAFT.Hint.DamageTypeMultiTitle"}}">{{localize "ADVENTURECRAFT.Label.DamageTypes"}}</label>
+                    <p class="notes ac-damage-types-hint">{{localize "ADVENTURECRAFT.Hint.DamageTypeMulti"}}</p>
+                    <div class="ac-pool-damage-type-chips ac-damage-type-chips" role="list" data-pool-index="{{this.index}}">
+                      {{#each this.damageTypesSelected}}
+                      <span class="ac-damage-type-chip" role="listitem" data-value="{{this.value}}">
+                        <span class="ac-damage-type-chip-label">{{this.label}}</span>
+                        <button type="button" class="ac-damage-type-chip-remove" data-value="{{this.value}}" title="{{localize "ADVENTURECRAFT.Button.Remove"}}" aria-label="{{localize "ADVENTURECRAFT.Aria.RemoveDamageType"}}">×</button>
+                      </span>
+                      {{/each}}
+                    </div>
+                    <div class="form-fields">
+                      <select class="ac-damage-type-pick ac-pool-damage-type-pick" data-pool-index="{{this.index}}" aria-label="{{localize "ADVENTURECRAFT.Label.DamageTypePickPlaceholder"}}">
+                        <option value="">{{localize "ADVENTURECRAFT.Label.DamageTypePickPlaceholder"}}</option>
+                        {{#each this.damageTypePickOptions}}
+                        <option value="{{this.value}}">{{this.label}}</option>
+                        {{/each}}
+                      </select>
+                    </div>
+                  </div>
+                </fieldset>
+              </div>
+            </div>
+            {{/each}}
+            <div class="ac-row" style="margin-top:0.5rem">
+              <button type="button" class="ac-crit-pool-add">{{localize "ADVENTURECRAFT.Button.AddCritPoolOption"}}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ac-section" id="ac-mastery-section">
+        <h3><i class="fas fa-award"></i> {{localize "ADVENTURECRAFT.Mastery.SectionTitle"}} <span class="ac-hint-inline">{{localize "ADVENTURECRAFT.Hint.Optional"}}</span></h3>
+        <p class="notes" style="margin:0 0 0.5rem">{{localize "ADVENTURECRAFT.Mastery.ThresholdHint"}}</p>
+        <div class="ac-row">
+          <label class="ac-label-flex">
+            <input type="checkbox" id="ac-recipe-mastery-enabled" {{#if recipeMastery.enabled}}checked{{/if}}/>
+            <span>{{localize "ADVENTURECRAFT.Mastery.Enable"}}</span>
+          </label>
+        </div>
+        <div class="ac-row" id="ac-mastery-threshold-row" {{#unless recipeMastery.enabled}}style="display:none"{{/unless}}>
+          <label>{{localize "ADVENTURECRAFT.Label.MasteryThreshold"}}</label>
+          <input type="number" id="ac-recipe-mastery-threshold" value="{{recipeMastery.threshold}}" min="1" max="9999" style="max-width:80px"/>
+        </div>
+        <div class="ac-row" id="ac-mastery-crit-roll-row" {{#unless recipeMastery.enabled}}style="display:none"{{/unless}}>
+          <label class="ac-label-flex">
+            <input type="checkbox" id="ac-recipe-mastery-allow-crit-roll" {{#if recipeMastery.allowCritRoll}}checked{{/if}}/>
+            <span>{{localize "ADVENTURECRAFT.Mastery.AllowCritRoll"}}</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="ac-section ac-create-section">
+        <div class="ac-row">
+          <label>{{localize "ADVENTURECRAFT.Label.RecipeName"}}</label>
+          <input type="text" id="ac-recipe-name" placeholder="{{localize "ADVENTURECRAFT.Hint.EnterRecipeName"}}" value="{{recipeName}}" />
+        </div>
+        <div class="ac-row">
+          <label>{{localize "ADVENTURECRAFT.Label.Category"}}</label>
+          <input type="text" id="ac-recipe-category" placeholder="{{localize "ADVENTURECRAFT.Hint.CategoryPlaceholder"}}" value="{{recipeCategory}}" />
+        </div>
+        {{#if books.length}}
+        <div class="ac-row">
+          <label>{{localize "ADVENTURECRAFT.Label.RecipeBook"}}</label>
+          <select id="ac-recipe-book">
+            <option value="">{{localize "ADVENTURECRAFT.Hint.NoBookOption"}}</option>
+            {{#each books}}
+              <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.name}}</option>
+            {{/each}}
+          </select>
+        </div>
+        {{/if}}
+        {{#if recipeResult}}
+          <div class="ac-row">
+            <label>{{localize "ADVENTURECRAFT.Label.ResultItemName"}}</label>
+            <input type="text" id="ac-recipe-result-name" placeholder="{{localize "ADVENTURECRAFT.Hint.ResultItemNamePlaceholder"}}" value="{{recipeResult.name}}" />
+          </div>
+          <div class="ac-row">
+            <label>{{localize "ADVENTURECRAFT.Label.ResultQuantity"}}</label>
+            <input type="number" id="ac-recipe-result-qty" value="{{recipeResultQty}}" min="1" max="999" style="max-width:70px"/>
+          </div>
+          <div class="ac-row">
+            <label>{{localize "ADVENTURECRAFT.Label.ItemType"}}</label>
+            <select id="ac-recipe-result-type">
+              {{#each itemTypes}}
+                <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+              {{/each}}
+            </select>
+          </div>
+          {{#if showEquipmentSubtype}}
+          <div class="ac-row">
+            <label>{{localize "ADVENTURECRAFT.Label.EquipmentSubtype"}}</label>
+            <select id="ac-recipe-equipment-subtype">
+              {{#each equipmentSubtypeOptions}}
+              <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+              {{/each}}
+            </select>
+          </div>
+          {{/if}}
+          {{#if showConsumableSubtype}}
+          <div class="ac-row">
+            <label>{{localize "ADVENTURECRAFT.Label.ConsumableSubtype"}}</label>
+            <select id="ac-recipe-consumable-subtype">
+              {{#each consumableSubtypeOptions}}
+              <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+              {{/each}}
+            </select>
+          </div>
+          {{/if}}
+        {{/if}}
+        <div class="ac-row">
+          <label title="{{localize "ADVENTURECRAFT.Hint.CritQualityNamesTitle"}}" style="display:flex;align-items:center;gap:0.45rem;cursor:pointer">
+            <input type="checkbox" id="ac-recipe-crit-quality-names" {{#if recipeCritQualityNames}}checked{{/if}}/>
+            <span>{{localize "ADVENTURECRAFT.Label.CritQualityNames"}}</span>
+          </label>
+        </div>
+        <button type="button" class="ac-btn-primary ac-save-recipe" data-action="saveRecipe">
+          <i class="fas fa-save"></i> {{localize "ADVENTURECRAFT.Button.SaveRecipe"}}
+        </button>
+        <button type="button" class="ac-btn-secondary ac-open-browser" data-action="openBrowser">
+          <i class="fas fa-book-open"></i> {{localize "ADVENTURECRAFT.Button.OpenBrowser"}}
+        </button>
+      </div>
+
+    </div>
+    {{/if}}
+
+  </section>
+</div>
