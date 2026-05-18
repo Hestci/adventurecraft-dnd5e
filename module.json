@@ -2,7 +2,7 @@
   "id": "adventurecraft-dnd5e",
   "title": "AdventureCraft DnD5e",
   "description": "DnD5e bridge for AdventureCraft — recipe editor, crit UI, combine items.",
-  "version": "0.2.0-split",
+  "version": "0.2.1-split",
   "authors": [{ "name": "Hest", "flags": {} }],
   "compatibility": { "minimum": "14", "verified": "14" },
   "relationships": {

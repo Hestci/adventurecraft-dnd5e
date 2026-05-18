@@ -142,6 +142,45 @@ function _injectTagButton(app, html) {
 Hooks.on("renderItemSheetV2", _injectTagButton);
 Hooks.on("renderItemSheet", _injectTagButton);
 
+function _injectOriginButton(app, html) {
+  const doc = app.document ?? app.object;
+  if (!doc || doc.documentName !== "Item") return;
+
+  let core;
+  try {
+    core = coreApi();
+  } catch {
+    return;
+  }
+  if (!core.hasCraftOrigin(doc)) return;
+
+  const root = html instanceof HTMLElement ? html : html[0];
+  if (!root || root.querySelector(".ac-origin-btn")) return;
+
+  const header = root.querySelector(".window-header");
+  if (!header) return;
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "ac-origin-btn header-button control";
+  btn.title = game.i18n.localize("ADVENTURECRAFT.Origin.ShowButton");
+  btn.setAttribute("aria-label", game.i18n.localize("ADVENTURECRAFT.Origin.ShowButton"));
+  btn.innerHTML = '<i class="fas fa-scroll"></i>';
+  btn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const speakerActor = doc.actor ?? doc.parent ?? null;
+    await core.postOriginToChat(doc, { speakerActor });
+  });
+
+  const closeBtn = header.querySelector("button[data-action='close'], a.close");
+  if (closeBtn) header.insertBefore(btn, closeBtn);
+  else header.appendChild(btn);
+}
+
+Hooks.on("renderItemSheetV2", _injectOriginButton);
+Hooks.on("renderItemSheet", _injectOriginButton);
+
 function _injectSidebarButton(app, html) {
   const core = coreApi();
   if (!core.userCan("createRecipe") && !core.userCan("viewAllRecipes") && !core.userCan("combineItems")) return;

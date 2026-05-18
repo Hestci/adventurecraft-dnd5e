@@ -1470,3 +1470,34 @@ button.ac-book-del-btn {
   margin-top: 6px;
   margin-bottom: 0;
 }
+
+/* ---------- Crafting origin (item sheet, read-only) ---------- */
+.ac-origin-panel {
+  margin: 0 0 12px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--ac-border, rgba(255, 255, 255, 0.18));
+  border-radius: var(--ac-radius, 6px);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--ac-text, #e2e0d8);
+  font-size: 0.9rem;
+}
+.ac-origin-panel__title {
+  margin: 0 0 8px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.ac-origin-panel__fields {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+.ac-origin-panel__fields dt {
+  margin: 0;
+  color: var(--ac-text-muted, #a8a59d);
+  font-weight: 500;
+}
+.ac-origin-panel__fields dd {
+  margin: 0;
+}
