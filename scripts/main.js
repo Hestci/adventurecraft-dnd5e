@@ -95,6 +95,7 @@ Hooks.on("renderActorSheet", _injectCraftingButton);
 function _injectTagButton(app, html) {
   const doc = app.document ?? app.object;
   if (!doc || doc.documentName !== "Item") return;
+  if (!doc.isOwner && !game.user.isGM) return;
 
   const root = html instanceof HTMLElement ? html : html[0];
   if (!root || root.querySelector(".ac-tags-btn")) return;
@@ -123,6 +124,10 @@ function _injectTagButton(app, html) {
       rejectClose: false,
     });
     if (result === null || result === undefined) return;
+    if (!doc.isOwner && !game.user.isGM) {
+      ui.notifications.warn(game.i18n.localize("ADVENTURECRAFT.Error.NoPermission"));
+      return;
+    }
     const tags = result.split(",").map(t => t.trim()).filter(Boolean);
     await doc.setFlag("adventurecraft-core", "tags", tags);
     if (tags.length) ui.notifications.info(game.i18n.format("ADVENTURECRAFT.Message.TagsSet", { tags: tags.join(", ") }));

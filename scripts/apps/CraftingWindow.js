@@ -97,6 +97,7 @@ export class CraftingWindow extends FormApplication {
     this._recipeMasteryEnabled = false;
     this._recipeMasteryThreshold = 20;
     this._recipeMasteryAllowCritRoll = false;
+    this._recipeMasteryTiers = [];
   }
 
   static openForEdit(actor, recipe) {
@@ -123,6 +124,12 @@ export class CraftingWindow extends FormApplication {
     win._recipeMasteryEnabled = m?.enabled === true && Number(m.masteryThreshold) > 0;
     win._recipeMasteryThreshold = m?.enabled ? Math.max(1, Number(m.masteryThreshold) || 20) : 20;
     win._recipeMasteryAllowCritRoll = m?.allowCritRoll === true;
+    win._recipeMasteryTiers = Array.isArray(m?.tiers)
+      ? m.tiers.map(t => ({
+        count: Math.max(1, Math.floor(Number(t.count) || 1)),
+        dcReduction: Math.max(0, Math.floor(Number(t.dcReduction) || 0)),
+      }))
+      : [];
     win._initialTab = "recipe";
     win.render(true);
     return win;
@@ -336,6 +343,10 @@ export class CraftingWindow extends FormApplication {
         enabled: this._recipeMasteryEnabled === true,
         threshold: Math.max(1, Number(this._recipeMasteryThreshold) || 20),
         allowCritRoll: this._recipeMasteryAllowCritRoll === true,
+        tiers: (this._recipeMasteryTiers ?? []).map(t => ({
+          count: t.count,
+          dcReduction: t.dcReduction,
+        })),
       },
       books: (() => {
         try {
@@ -479,7 +490,27 @@ export class CraftingWindow extends FormApplication {
     });
     html.find("#ac-recipe-mastery-enabled").on("change", e => {
       this._recipeMasteryEnabled = e.currentTarget.checked;
-      html.find("#ac-mastery-threshold-row, #ac-mastery-crit-roll-row").toggle(e.currentTarget.checked);
+      html.find("#ac-mastery-threshold-row, #ac-mastery-crit-roll-row, #ac-mastery-tiers-section")
+        .toggle(e.currentTarget.checked);
+    });
+    html.find("#ac-mastery-tier-add").on("click", () => {
+      this._readMasteryTiersFromHtml(html);
+      const th = Math.max(1, Number(this._recipeMasteryThreshold) || 20);
+      const last = this._recipeMasteryTiers.at(-1);
+      const nextCount = last ? Math.min(th - 1, last.count + 5) : Math.min(th - 1, 5);
+      if (nextCount < 1) {
+        ui.notifications.warn(game.i18n.localize("ADVENTURECRAFT.Error.MasteryTierAtThreshold"));
+        return;
+      }
+      const nextReduction = last ? last.dcReduction + 1 : 1;
+      this._recipeMasteryTiers.push({ count: nextCount, dcReduction: nextReduction });
+      this.render(false);
+    });
+    html.find(".ac-mastery-tier-remove").on("click", ev => {
+      this._readMasteryTiersFromHtml(html);
+      const idx = Number(ev.currentTarget.dataset.tierIndex);
+      if (Number.isFinite(idx)) this._recipeMasteryTiers.splice(idx, 1);
+      this.render(false);
     });
     html.find("#ac-recipe-mastery-threshold").on("change", e => {
       this._recipeMasteryThreshold = Math.max(1, Number(e.currentTarget.value) || 20);
@@ -595,6 +626,14 @@ export class CraftingWindow extends FormApplication {
     if (!item) return;
 
     if (target === "combine") {
+      if (!this.actor) {
+        ui.notifications.warn(game.i18n.localize("ADVENTURECRAFT.Error.CombineRequiresActor"));
+        return;
+      }
+      if (item.parent?.id !== this.actor.id) {
+        ui.notifications.warn(game.i18n.localize("ADVENTURECRAFT.Error.CombineActorInventoryOnly"));
+        return;
+      }
       if (this._combineItems.find(i => i.uuid === item.uuid)) return;
       this._combineItems.push(item);
       const plain = item.toObject ? item.toObject() : { ...item };
@@ -668,13 +707,30 @@ export class CraftingWindow extends FormApplication {
     return checked;
   }
 
+  /** @returns {boolean} */
+  _validateCombineSourcesInActorInventory() {
+    if (!this.actor) {
+      ui.notifications.warn(game.i18n.localize("ADVENTURECRAFT.Error.CombineRequiresActor"));
+      return false;
+    }
+    for (const src of this._combineItems) {
+      if (!this.actor.items.get(src.id)) {
+        ui.notifications.warn(game.i18n.localize("ADVENTURECRAFT.Error.CombineSourceNotInInventory"));
+        return false;
+      }
+    }
+    return true;
+  }
+
   async _onCreateItem(event) {
     if (!_core().userCan("combineItems")) return _core().denyAndWarn();
+    if (!_core().assertActorCanCraft(this.actor)) return _core().denyCraftActor();
     const html = $(this.element);
     if (!this._combineItems.length) {
       ui.notifications.warn(game.i18n.localize("ADVENTURECRAFT.Error.DropOneItem"));
       return;
     }
+    if (!this._validateCombineSourcesInActorInventory()) return;
     const name = html.find("#ac-combine-name").val()?.trim();
     if (!name) {
       ui.notifications.warn(game.i18n.localize("ADVENTURECRAFT.Error.EnterItemName"));
@@ -684,12 +740,16 @@ export class CraftingWindow extends FormApplication {
     const img = this._resolveImage(html, "combineImg", this._customCombineImg);
 
     // Подтверждение + показ того что будет потрачено
-    const willConsume = this.actor
-      ? this._combineItems.filter(i => this.actor.items.get(i.id))
-      : [];
+    const willConsume = this._combineItems
+      .map(src => this.actor.items.get(src.id))
+      .filter(Boolean);
     const consumeNote = willConsume.length
       ? `<p style="margin-top:8px;font-size:0.85rem;color:#888">${game.i18n.format("ADVENTURECRAFT.Dialog.ConsumeNote", { items: willConsume.map(i => foundry.utils.escapeHTML(i.name)).join(", ") })}</p>`
       : "";
+    if (willConsume.length !== this._combineItems.length) {
+      ui.notifications.warn(game.i18n.localize("ADVENTURECRAFT.Error.CombineSourceNotInInventory"));
+      return;
+    }
     const confirmed = await Dialog.confirm({
       title: game.i18n.localize("ADVENTURECRAFT.Dialog.CombineItemsTitle"),
       content: `<p>${game.i18n.format("ADVENTURECRAFT.Dialog.CombineItemsContent", { name: foundry.utils.escapeHTML(name) })}</p>${consumeNote}`,
@@ -807,58 +867,30 @@ export class CraftingWindow extends FormApplication {
       flags: { [MODULE_ID]: { crafted: true, sources: this._combineItems.map(i => i.uuid ?? i.name) } },
     };
     _log.log("AdventureCraft | FINAL itemData before Item.create:", JSON.stringify(itemData, null, 2));
-    const createOptions = this.actor ? { parent: this.actor } : {};
-    await Item.create(itemData, createOptions);
+    await Item.create(itemData, { parent: this.actor });
 
-    // Потратить исходные предметы из инвентаря
-    _log.group("AdventureCraft | CONSUME phase — actor:", this.actor?.name, "| items count:", this._combineItems.length);
-    _log.log("  this.actor?.id:", this.actor?.id);
-    if (this.actor) {
-      _log.log("  actor.items ids:", [...this.actor.items.keys()]);
-      for (const srcItem of this._combineItems) {
-        _log.group(`  srcItem "${srcItem.name}"`);
-        _log.log("    srcItem.id:", srcItem.id);
-        _log.log("    srcItem.uuid:", srcItem.uuid);
-        _log.log("    srcItem.parent?.id:", srcItem.parent?.id);
-        _log.log("    srcItem.parent?.name:", srcItem.parent?.name);
-        _log.log("    srcItem.parent?.id === actor.id:", srcItem.parent?.id === this.actor.id);
-        const byParent = srcItem.parent?.id === this.actor.id ? srcItem : null;
-        const byGet = this.actor.items.get(srcItem.id);
-        _log.log("    byParent (direct):", byParent ? "FOUND" : "null");
-        _log.log("    byGet (actor.items.get):", byGet ? "FOUND" : "null");
-        // Ищем предмет в инвентаре актора — прямо по живому документу или по ID
-        const actorItem = byParent ?? byGet;
-        if (!actorItem) {
-          _log.warn("    SKIP — not found in actor inventory!");
-          _log.end();
-          continue;
-        }
-        _log.log("    actorItem found:", actorItem.name, "id:", actorItem.id);
-        _log.log("    actorItem.system.uses (full):", actorItem.system?.uses);
-        _log.log("    actorItem.system.quantity:", actorItem.system?.quantity);
-        // uses.max в dnd5e 5.x — строка-формула, Number() нормализует
-        const rawMax = actorItem.system?.uses?.max;
-        const usesMax = Number(rawMax) || 0;
-        _log.log("    rawMax:", rawMax, "| usesMax (Number):", usesMax, "| usesMax > 0:", usesMax > 0);
-        if (usesMax > 0) {
-          const curVal = actorItem.system?.uses?.value ?? usesMax;
-          const newVal = Math.max(0, Number(curVal) - 1);
-          _log.log(`    → update uses.value: ${curVal} → ${newVal}`);
-          await actorItem.update({ "system.uses.value": newVal });
-        } else {
-          const qty = actorItem.system?.quantity ?? 1;
-          _log.log(`    → qty=${qty}, will ${qty <= 1 ? "DELETE" : `update quantity → ${qty - 1}`}`);
-          if (qty <= 1) await actorItem.delete();
-          else await actorItem.update({ "system.quantity": qty - 1 });
-        }
-        _log.end();
+    _log.group("AdventureCraft | CONSUME phase — actor:", this.actor.name);
+    for (const srcItem of this._combineItems) {
+      const actorItem = this.actor.items.get(srcItem.id);
+      if (!actorItem) {
+        console.error("AdventureCraft | combine consume: item missing after create", srcItem.id);
+        continue;
       }
-    } else {
-      _log.log("  No actor — skip consumption.");
+      const rawMax = actorItem.system?.uses?.max;
+      const usesMax = Number(rawMax) || 0;
+      if (usesMax > 0) {
+        const curVal = actorItem.system?.uses?.value ?? usesMax;
+        const newVal = Math.max(0, Number(curVal) - 1);
+        await actorItem.update({ "system.uses.value": newVal });
+      } else {
+        const qty = actorItem.system?.quantity ?? 1;
+        if (qty <= 1) await actorItem.delete();
+        else await actorItem.update({ "system.quantity": qty - 1 });
+      }
     }
     _log.end();
 
-    const dest = this.actor ? `"${this.actor.name}"` : "Items (world)";
+    const dest = `"${this.actor.name}"`;
     ui.notifications.info(game.i18n.format("ADVENTURECRAFT.Message.ItemCreated", { name, destination: dest }));
     this._combineItems = [];
     this._includedActivities = new Set();
@@ -980,6 +1012,13 @@ export class CraftingWindow extends FormApplication {
     this._recipeMasteryEnabled = masteryEnabled;
     this._recipeMasteryThreshold = masteryTh;
     this._recipeMasteryAllowCritRoll = html.find("#ac-recipe-mastery-allow-crit-roll").is(":checked");
+    this._readMasteryTiersFromHtml(html);
+    if (masteryEnabled && this._recipeMasteryTiers.length) {
+      if (!this._validateMasteryTiers(this._recipeMasteryTiers, masteryTh)) return;
+    }
+    const normalizedTiers = masteryEnabled && this._recipeMasteryTiers.length
+      ? _core().normalizeMasteryTiers(this._recipeMasteryTiers, masteryTh)
+      : undefined;
 
     const recipe = {
       ...(this._editingRecipeId ? { id: this._editingRecipeId } : {}),
@@ -992,6 +1031,7 @@ export class CraftingWindow extends FormApplication {
           enabled: true,
           masteryThreshold: masteryTh,
           allowCritRoll: this._recipeMasteryAllowCritRoll,
+          ...(normalizedTiers?.length ? { tiers: normalizedTiers } : {}),
         },
       } : {}),
       critQualityNames: this._recipeCritQualityNames,
@@ -1025,7 +1065,41 @@ export class CraftingWindow extends FormApplication {
     this._recipeMasteryEnabled = false;
     this._recipeMasteryThreshold = 20;
     this._recipeMasteryAllowCritRoll = false;
+    this._recipeMasteryTiers = [];
     this.render();
+  }
+
+  _readMasteryTiersFromHtml(html) {
+    const tiers = [];
+    html.find("#ac-mastery-tiers-body tr").each((_, row) => {
+      const count = Math.floor(Number(row.querySelector(".ac-mastery-tier-count")?.value) || 0);
+      const dcReduction = Math.floor(Number(row.querySelector(".ac-mastery-tier-dc")?.value) || 0);
+      if (count >= 1) tiers.push({ count, dcReduction: Math.max(0, dcReduction) });
+    });
+    this._recipeMasteryTiers = tiers;
+  }
+
+  _validateMasteryTiers(tiers, masteryTh) {
+    const sorted = [...tiers].sort((a, b) => a.count - b.count);
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i].count <= sorted[i - 1].count) {
+        ui.notifications.warn(game.i18n.localize("ADVENTURECRAFT.Error.MasteryTierCountsOrder"));
+        return false;
+      }
+    }
+    for (const t of sorted) {
+      if (t.count >= masteryTh) {
+        ui.notifications.warn(game.i18n.localize("ADVENTURECRAFT.Error.MasteryTierAtThreshold"));
+        return false;
+      }
+    }
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i].dcReduction < sorted[i - 1].dcReduction) {
+        ui.notifications.info(game.i18n.localize("ADVENTURECRAFT.Warning.MasteryTierDcOrder"));
+        break;
+      }
+    }
+    return true;
   }
 
   _onRemoveItem(event) {

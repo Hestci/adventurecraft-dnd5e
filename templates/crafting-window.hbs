@@ -585,6 +585,35 @@
             <span>{{localize "ADVENTURECRAFT.Mastery.AllowCritRoll"}}</span>
           </label>
         </div>
+        <div id="ac-mastery-tiers-section" class="ac-mastery-tiers" {{#unless recipeMastery.enabled}}style="display:none"{{/unless}}>
+          <h4>{{localize "ADVENTURECRAFT.Mastery.TiersTitle"}}</h4>
+          <p class="notes">{{localize "ADVENTURECRAFT.Mastery.TiersHint"}}</p>
+          <table class="ac-mastery-tiers-table">
+            <thead>
+              <tr>
+                <th>{{localize "ADVENTURECRAFT.Mastery.TierCrafts"}}</th>
+                <th>{{localize "ADVENTURECRAFT.Mastery.TierDcReduction"}}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="ac-mastery-tiers-body">
+              {{#each recipeMastery.tiers}}
+              <tr>
+                <td><input type="number" class="ac-mastery-tier-count" value="{{count}}" min="1" max="9998" style="max-width:72px"/></td>
+                <td><input type="number" class="ac-mastery-tier-dc" value="{{dcReduction}}" min="0" max="99" style="max-width:72px"/></td>
+                <td>
+                  <button type="button" class="ac-mastery-tier-remove" data-tier-index="{{@index}}" title="{{localize "ADVENTURECRAFT.Button.Remove"}}">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              {{/each}}
+            </tbody>
+          </table>
+          <button type="button" id="ac-mastery-tier-add" class="ac-btn-secondary">
+            <i class="fas fa-plus"></i> {{localize "ADVENTURECRAFT.Mastery.AddTier"}}
+          </button>
+        </div>
       </div>
 
       <div class="ac-section ac-create-section">
