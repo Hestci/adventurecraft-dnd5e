@@ -9,6 +9,9 @@
     <a class="item" data-tab="recipe" data-group="primary">
       <i class="fas fa-scroll"></i> {{localize "ADVENTURECRAFT.Tab.CreateRecipe"}}
     </a>
+    <a class="item" data-tab="station" data-group="primary">
+      <i class="fas fa-anvil"></i> {{localize "ADVENTURECRAFT.Tab.CreateStation"}}
+    </a>
     {{/if}}
   </nav>
 
@@ -701,6 +704,74 @@
         <button type="button" class="ac-btn-secondary ac-open-browser" data-action="openBrowser">
           <i class="fas fa-book-open"></i> {{localize "ADVENTURECRAFT.Button.OpenBrowser"}}
         </button>
+      </div>
+
+    </div>
+    {{/if}}
+
+    {{!-- ==================== TAB: CREATE STATION ==================== --}}
+    {{#if canCreateRecipe}}
+    <div class="tab" data-tab="station" data-group="primary">
+
+      <div class="ac-section">
+        <h3><i class="fas fa-list"></i> {{localize "ADVENTURECRAFT.Station.ListTitle"}}</h3>
+        {{#if stations.length}}
+        <ul class="ac-station-list ac-item-list">
+          {{#each stations}}
+          <li class="ac-station-row ac-item-entry" data-actor-id="{{this.id}}">
+            <img src="{{this.img}}" alt="{{this.name}}" width="28" height="28"/>
+            <span class="ac-item-name">{{this.name}}</span>
+            <span class="ac-station-tier-badge" title="{{localize "ADVENTURECRAFT.Station.Tier"}}">T{{this.tier}}</span>
+            <button type="button" class="ac-station-sheet-btn ac-btn-secondary" data-actor-id="{{this.id}}" title="{{localize "ADVENTURECRAFT.Station.OpenSheet"}}">
+              <i class="fas fa-user"></i>
+            </button>
+            <button type="button" class="ac-station-edit-btn ac-btn-secondary" data-actor-id="{{this.id}}" title="{{localize "ADVENTURECRAFT.Button.Edit"}}">
+              <i class="fas fa-pen"></i>
+            </button>
+            <button type="button" class="ac-station-delete-btn ac-btn-secondary" data-actor-id="{{this.id}}" title="{{localize "ADVENTURECRAFT.Button.Delete"}}">
+              <i class="fas fa-trash"></i>
+            </button>
+          </li>
+          {{/each}}
+        </ul>
+        {{else}}
+        <p class="notes">{{localize "ADVENTURECRAFT.Station.Empty"}}</p>
+        {{/if}}
+      </div>
+
+      <div class="ac-section ac-create-section">
+        <h3>
+          <i class="fas fa-anvil"></i>
+          {{#if editingStationId}}{{localize "ADVENTURECRAFT.Station.EditSection"}}{{else}}{{localize "ADVENTURECRAFT.Station.CreateSection"}}{{/if}}
+        </h3>
+        <div class="ac-row">
+          <label>{{localize "ADVENTURECRAFT.Station.Name"}}</label>
+          <input type="text" id="ac-station-name" value="{{stationName}}" placeholder="{{localize "ADVENTURECRAFT.Station.Name"}}"/>
+        </div>
+        <div class="ac-row">
+          <label>{{localize "ADVENTURECRAFT.Station.Tier"}}</label>
+          <input type="number" id="ac-station-tier" value="{{stationTier}}" min="1" max="5" style="max-width:80px"/>
+        </div>
+        <div class="ac-row">
+          <label>{{localize "ADVENTURECRAFT.Station.Portrait"}}</label>
+          <div class="ac-station-img-row">
+            <img src="{{stationImgDisplay}}" alt="" width="40" height="40" class="ac-station-img-preview"/>
+            <button type="button" class="ac-btn-secondary ac-station-browse-img">
+              <i class="fas fa-folder-open"></i> {{localize "ADVENTURECRAFT.Button.Browse"}}
+            </button>
+          </div>
+        </div>
+        <div class="ac-row ac-station-actions">
+          <button type="button" class="ac-btn-primary ac-save-station">
+            <i class="fas fa-save"></i>
+            {{#if editingStationId}}{{localize "ADVENTURECRAFT.Station.Save"}}{{else}}{{localize "ADVENTURECRAFT.Station.Create"}}{{/if}}
+          </button>
+          {{#if editingStationId}}
+          <button type="button" class="ac-btn-secondary ac-cancel-station-edit">
+            {{localize "ADVENTURECRAFT.Station.CancelEdit"}}
+          </button>
+          {{/if}}
+        </div>
       </div>
 
     </div>

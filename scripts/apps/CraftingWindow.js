@@ -18,6 +18,7 @@ import {
 import { getSuggestedPoolOptions } from "../crit-pool-presets.js";
 const MODULE_ID = "adventurecraft-dnd5e";
 const BRIDGE_ID = MODULE_ID;
+const DEFAULT_STATION_IMG = "icons/tools/smithing/anvil.webp";
 
 function _core() {
   return coreApi();
@@ -100,6 +101,10 @@ export class CraftingWindow extends FormApplication {
     this._recipeMasteryTiers = [];
     this._recipeStationsRequired = false;
     this._recipeStationsMinTier = 1;
+    this._editingStationId = null;
+    this._stationName = "";
+    this._stationTier = 1;
+    this._stationImg = null;
   }
 
   static openForEdit(actor, recipe) {
@@ -136,6 +141,22 @@ export class CraftingWindow extends FormApplication {
     win._recipeStationsRequired = st.required === true;
     win._recipeStationsMinTier = Math.min(5, Math.max(1, Math.floor(Number(st.minTier) || 1)));
     win._initialTab = "recipe";
+    win.render(true);
+    return win;
+  }
+
+  static openForStation(actor, stationId = null) {
+    const win = new CraftingWindow(actor);
+    win._initialTab = "station";
+    if (stationId) {
+      const station = _core().StationStore.get(stationId);
+      if (station) {
+        win._editingStationId = station.id;
+        win._stationName = station.name;
+        win._stationTier = station.tier;
+        win._stationImg = station.img;
+      }
+    }
     win.render(true);
     return win;
   }
@@ -179,12 +200,18 @@ export class CraftingWindow extends FormApplication {
     try { showRecipeResultProps = game.settings.get(MODULE_ID, "showRecipeResultProps"); } catch { /* noop */ }
     const canCombineItems = enableCombine && _core().userCan("combineItems");
     const canCreateRecipe = _core().userCan("createRecipe");
+    const stations = canCreateRecipe ? _core().StationStore.getAll() : [];
     const damageTypePickOptions = getDamageTypeSelectOptions();
     return {
       combineEnabled: enableCombine,
       showRecipeResultProps,
       canCombineItems,
       canCreateRecipe,
+      stations,
+      stationName: this._stationName,
+      stationTier: this._stationTier,
+      stationImgDisplay: this._stationImg || DEFAULT_STATION_IMG,
+      editingStationId: this._editingStationId,
       combineItems: this._combineItems,
       combineActivities: this._getCombineActivities(),
       customCombineImg: this._customCombineImg,
@@ -484,6 +511,16 @@ export class CraftingWindow extends FormApplication {
       if (canCombineItems) this._tabs[0]?.activate("combine");
       else if (canCreateRecipe) this._tabs[0]?.activate("recipe");
     }
+    html.find(".ac-save-station").on("click", this._onSaveStation.bind(this));
+    html.find(".ac-cancel-station-edit").on("click", this._onCancelStationEdit.bind(this));
+    html.find(".ac-station-edit-btn").on("click", this._onEditStation.bind(this));
+    html.find(".ac-station-delete-btn").on("click", this._onDeleteStation.bind(this));
+    html.find(".ac-station-sheet-btn").on("click", this._onOpenStationSheet.bind(this));
+    html.find(".ac-station-browse-img").on("click", () => this._openFilePicker("station"));
+    html.find("#ac-station-name").on("change blur", e => { this._stationName = e.currentTarget.value; });
+    html.find("#ac-station-tier").on("change", e => {
+      this._stationTier = Math.min(5, Math.max(1, Number(e.currentTarget.value) || 1));
+    });
     html.find(".ac-activity-check").on("change", e => {
       const key = e.currentTarget.dataset.key;
       if (e.currentTarget.checked) this._includedActivities.add(key);
@@ -1436,15 +1473,107 @@ export class CraftingWindow extends FormApplication {
   }
 
   _openFilePicker(context) {
+    const current = context === "combine"
+      ? (this._customCombineImg ?? "")
+      : context === "station"
+        ? (this._stationImg ?? "")
+        : (this._customRecipeImg ?? "");
     new FilePicker({
       type: "image",
-      current: context === "combine" ? (this._customCombineImg ?? "") : (this._customRecipeImg ?? ""),
+      current,
       callback: (path) => {
         if (context === "combine") this._customCombineImg = path;
+        else if (context === "station") this._stationImg = path;
         else this._customRecipeImg = path;
         this.render();
       },
     }).render(true);
+  }
+
+  _readStationFormFromHtml(html) {
+    this._stationName = html.find("#ac-station-name").val()?.trim() ?? "";
+    this._stationTier = Math.min(5, Math.max(1, Number(html.find("#ac-station-tier").val()) || 1));
+  }
+
+  _resetStationForm() {
+    this._editingStationId = null;
+    this._stationName = "";
+    this._stationTier = 1;
+    this._stationImg = null;
+  }
+
+  async _onSaveStation(event) {
+    event.preventDefault();
+    if (!_core().userCan("createRecipe")) return;
+    const html = this.element;
+    this._readStationFormFromHtml(html);
+    const { StationStore } = _core();
+    try {
+      if (this._editingStationId) {
+        await StationStore.update(this._editingStationId, {
+          name: this._stationName,
+          tier: this._stationTier,
+          img: this._stationImg ?? undefined,
+        });
+        this._resetStationForm();
+      } else {
+        await StationStore.create({
+          name: this._stationName,
+          tier: this._stationTier,
+          img: this._stationImg ?? undefined,
+        });
+        this._resetStationForm();
+      }
+      this.render(false);
+    } catch {
+      /* notifications in StationStore */
+    }
+  }
+
+  _onCancelStationEdit(event) {
+    event.preventDefault();
+    this._resetStationForm();
+    this.render(false);
+  }
+
+  _onEditStation(event) {
+    event.preventDefault();
+    const actorId = event.currentTarget.dataset.actorId;
+    const station = _core().StationStore.get(actorId);
+    if (!station) return;
+    this._editingStationId = station.id;
+    this._stationName = station.name;
+    this._stationTier = station.tier;
+    this._stationImg = station.img;
+    this.render(false);
+  }
+
+  async _onDeleteStation(event) {
+    event.preventDefault();
+    if (!_core().userCan("createRecipe")) return;
+    const actorId = event.currentTarget.dataset.actorId;
+    const station = _core().StationStore.get(actorId);
+    if (!station) return;
+    const ok = await Dialog.confirm({
+      title: game.i18n.localize("ADVENTURECRAFT.Station.DeleteTitle"),
+      content: game.i18n.format("ADVENTURECRAFT.Station.DeleteContent", { name: foundry.utils.escapeHTML(station.name) }),
+      yes: () => true,
+      no: () => false,
+      defaultYes: false,
+    });
+    if (!ok) return;
+    try {
+      await _core().StationStore.delete(actorId);
+      if (this._editingStationId === actorId) this._resetStationForm();
+      this.render(false);
+    } catch {
+      /* notifications in StationStore */
+    }
+  }
+
+  _onOpenStationSheet(event) {
+    event.preventDefault();
+    _core().StationStore.openSheet(event.currentTarget.dataset.actorId);
   }
 
   _flattenObject(obj, prefix, result) {

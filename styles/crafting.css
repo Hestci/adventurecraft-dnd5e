@@ -528,6 +528,18 @@
 .ac-item-entry img { border-radius: 3px; flex-shrink: 0; }
 .ac-item-name { flex: 1; font-size: 0.88rem; font-weight: 600; }
 .ac-item-type { font-size: 0.75rem; color: var(--ac-text-muted); }
+.ac-station-tier-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ac-yellow);
+  padding: 2px 6px;
+  border-radius: var(--ac-radius-sm);
+  border: 1px solid rgba(200, 160, 48, 0.45);
+  flex-shrink: 0;
+}
+.ac-station-img-row { display: flex; align-items: center; gap: 10px; }
+.ac-station-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 0.5rem; }
+.ac-station-row .ac-btn-secondary { padding: 4px 8px; min-width: 32px; }
 .ac-item-entry--recipe .ac-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .ac-tags-input, .ac-qty-input {
   border: 1px solid var(--ac-border-strong);
