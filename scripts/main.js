@@ -60,6 +60,7 @@ function _injectCraftingButton(app, html) {
   if (!doc || doc.documentName !== "Actor") return;
 
   const core = coreApi();
+  if (core.isStationActor(doc)) return;
   const canExtraHub =
     core.userCan("createRecipe") ||
     core.userCan("viewAllRecipes") ||
@@ -91,6 +92,57 @@ function _injectCraftingButton(app, html) {
 
 Hooks.on("renderActorSheetV2", _injectCraftingButton);
 Hooks.on("renderActorSheet", _injectCraftingButton);
+
+function _injectStationButton(app, html) {
+  const doc = app.document ?? app.object;
+  if (!doc || doc.documentName !== "Actor") return;
+
+  let core;
+  try {
+    core = coreApi();
+  } catch {
+    return;
+  }
+  if (!core.isStationActor(doc)) return;
+
+  const root = html instanceof HTMLElement ? html : html[0];
+  if (!root || root.querySelector(".ac-station-btn")) return;
+
+  const header = root.querySelector(".window-header");
+  if (!header) return;
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "ac-station-btn header-button control";
+  btn.title = game.i18n.localize("ADVENTURECRAFT.Station.OpenHub");
+  btn.setAttribute("aria-label", game.i18n.localize("ADVENTURECRAFT.Station.OpenHub"));
+  btn.innerHTML = '<i class="fas fa-anvil"></i>';
+  btn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await core.openStationHub(doc);
+  });
+
+  const closeBtn = header.querySelector("button[data-action='close'], a.close");
+  if (closeBtn) header.insertBefore(btn, closeBtn);
+  else header.appendChild(btn);
+}
+
+Hooks.on("renderActorSheetV2", _injectStationButton);
+Hooks.on("renderActorSheet", _injectStationButton);
+
+Hooks.on("clickToken", (token, event) => {
+  if (!token?.actor || event?.defaultPrevented) return;
+  let core;
+  try {
+    core = coreApi();
+  } catch {
+    return;
+  }
+  if (!core.isStationActor(token.actor)) return;
+  event?.preventDefault?.();
+  core.openStationHub(token.actor);
+});
 
 function _injectTagButton(app, html) {
   const doc = app.document ?? app.object;

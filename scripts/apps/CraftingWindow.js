@@ -98,6 +98,8 @@ export class CraftingWindow extends FormApplication {
     this._recipeMasteryThreshold = 20;
     this._recipeMasteryAllowCritRoll = false;
     this._recipeMasteryTiers = [];
+    this._recipeStationsRequired = false;
+    this._recipeStationsMinTier = 1;
   }
 
   static openForEdit(actor, recipe) {
@@ -130,6 +132,9 @@ export class CraftingWindow extends FormApplication {
         dcReduction: Math.max(0, Math.floor(Number(t.dcReduction) || 0)),
       }))
       : [];
+    const st = recipe.stations ?? {};
+    win._recipeStationsRequired = st.required === true;
+    win._recipeStationsMinTier = Math.min(5, Math.max(1, Math.floor(Number(st.minTier) || 1)));
     win._initialTab = "recipe";
     win.render(true);
     return win;
@@ -348,6 +353,10 @@ export class CraftingWindow extends FormApplication {
           dcReduction: t.dcReduction,
         })),
       },
+      recipeStations: {
+        required: this._recipeStationsRequired === true,
+        minTier: Math.min(5, Math.max(1, Number(this._recipeStationsMinTier) || 1)),
+      },
       books: (() => {
         try {
           return _core().RecipeStore.getBooks().map(b => ({ ...b, selected: b.id === this._recipeBookId }));
@@ -487,6 +496,13 @@ export class CraftingWindow extends FormApplication {
     html.find(".ac-open-browser").on("click", () => new _core().RecipeBrowser(this.actor).render(true));
     html.find("#ac-recipe-crit-quality-names").on("change", e => {
       this._recipeCritQualityNames = e.currentTarget.checked;
+    });
+    html.find("#ac-recipe-stations-required").on("change", e => {
+      this._recipeStationsRequired = e.currentTarget.checked;
+      html.find("#ac-stations-min-tier-row").toggle(e.currentTarget.checked);
+    });
+    html.find("#ac-recipe-stations-min-tier").on("change", e => {
+      this._recipeStationsMinTier = Math.min(5, Math.max(1, Number(e.currentTarget.value) || 1));
     });
     html.find("#ac-recipe-mastery-enabled").on("change", e => {
       this._recipeMasteryEnabled = e.currentTarget.checked;
@@ -1002,6 +1018,8 @@ export class CraftingWindow extends FormApplication {
     const bookId = html.find("#ac-recipe-book").val()?.trim() || null;
     this._recipeBookId = bookId;
     this._recipeCritQualityNames = html.find("#ac-recipe-crit-quality-names").is(":checked");
+    this._recipeStationsRequired = html.find("#ac-recipe-stations-required").is(":checked");
+    this._recipeStationsMinTier = Math.min(5, Math.max(1, Number(html.find("#ac-recipe-stations-min-tier").val()) || 1));
 
     const masteryEnabled = html.find("#ac-recipe-mastery-enabled").is(":checked");
     const masteryTh = Math.max(1, Math.floor(Number(html.find("#ac-recipe-mastery-threshold").val()) || 20));
@@ -1035,6 +1053,9 @@ export class CraftingWindow extends FormApplication {
         },
       } : {}),
       critQualityNames: this._recipeCritQualityNames,
+      ...(this._recipeStationsRequired
+        ? { stations: { required: true, minTier: this._recipeStationsMinTier } }
+        : {}),
       ingredients: this._recipeIngredients.map(i => ({
         name: i.name, img: i.img, quantity: i.quantity ?? 1, uuid: i.uuid,
         ...(i.tags?.length ? { tags: i.tags } : {}),
@@ -1066,6 +1087,8 @@ export class CraftingWindow extends FormApplication {
     this._recipeMasteryThreshold = 20;
     this._recipeMasteryAllowCritRoll = false;
     this._recipeMasteryTiers = [];
+    this._recipeStationsRequired = false;
+    this._recipeStationsMinTier = 1;
     this.render();
   }
 
